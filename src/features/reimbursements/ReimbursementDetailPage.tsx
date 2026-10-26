@@ -3,11 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { Reimbursement, ReimbursementFile, ApprovalHistoryItem } from '../../types';
-import { formatRupiah, formatDate, formatDateTime, formatFileSize } from '../../lib/formatters';
+import { formatRupiah, formatDate, formatDateTime } from '../../lib/formatters';
 import { StatusBadge } from '../../components/ui/StatusBadge';
+import { ProofViewerCard } from '../../components/reimbursement/ProofViewerCard';
 import {
   ArrowLeft,
-  FileText,
   AlertCircle,
   Calendar,
   CreditCard,
@@ -15,7 +15,6 @@ import {
   Ban,
   Clock,
   User,
-  ExternalLink,
 } from 'lucide-react';
 
 export const ReimbursementDetailPage: React.FC = () => {
@@ -415,49 +414,8 @@ export const ReimbursementDetailPage: React.FC = () => {
         </div>
       )}
 
-      {/* Berkas Bukti Transaksi */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-        <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-emerald-600" />
-          <span>Bukti Transaksi Lampiran ({files.length})</span>
-        </h2>
-
-        {files.length === 0 ? (
-          <p className="text-xs text-slate-400 italic">Tidak ada berkas bukti terlampir.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {files.map((file) => (
-              <div
-                key={file.id}
-                className="p-3 border border-slate-200 rounded-xl flex items-center justify-between gap-2 hover:border-emerald-400 transition-colors"
-              >
-                <div className="truncate">
-                  <div className="text-xs font-bold text-slate-800 truncate">
-                    {file.original_filename}
-                  </div>
-                  <div className="text-[11px] text-slate-400">
-                    {formatFileSize(file.file_size)} • {file.mime_type.split('/')[1]?.toUpperCase()}
-                  </div>
-                </div>
-
-                {file.signed_url ? (
-                  <a
-                    href={file.signed_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-2 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition-colors flex items-center gap-1 min-w-[36px] min-h-[36px]"
-                    title="Buka / Unduh Bukti"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                ) : (
-                  <span className="text-[10px] text-slate-400">URL kadaluarsa</span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Bukti Fisik Transaksi (Nota / Struk) - Inline Preview dengan Perbesar Nota */}
+      <ProofViewerCard files={files} title="Bukti Fisik Transaksi (Nota / Struk)" />
 
       {/* Riwayat Audit & Keputusan */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">

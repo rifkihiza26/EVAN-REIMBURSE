@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { Upload, X, AlertTriangle, ArrowLeft, CheckCircle2, Car } from 'lucide-react';
+import { Upload, X, AlertTriangle, ArrowLeft, CheckCircle2, Car, Plus } from 'lucide-react';
 
 interface SelectedFileItem {
   file: File;
@@ -25,6 +25,8 @@ export const NewReimbursementPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const selectedFiles = Array.from(e.target.files);
@@ -36,10 +38,12 @@ export const NewReimbursementPage: React.FC = () => {
     for (const f of selectedFiles) {
       if (!allowedTypes.includes(f.type)) {
         setErrorMessage(`File "${f.name}" tidak didukung. Harap upload gambar JPG, PNG, atau dokumen PDF.`);
+        if (e.target) e.target.value = '';
         return;
       }
       if (f.size > maxSizeBytes) {
         setErrorMessage(`File "${f.name}" melebihi batas ukuran maksimal 10 MB.`);
+        if (e.target) e.target.value = '';
         return;
       }
     }
@@ -50,6 +54,11 @@ export const NewReimbursementPage: React.FC = () => {
       caption: '',
     }));
     setFileItems((prev) => [...prev, ...newItems]);
+
+    // Reset input value agar user dapat mengklik dan memilih foto tambahan lagi berikutnya
+    if (e.target) {
+      e.target.value = '';
+    }
   };
 
   const removeFile = (index: number) => {
@@ -318,37 +327,57 @@ export const NewReimbursementPage: React.FC = () => {
 
         {/* Berkas Bukti Transaksi */}
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-            Bukti Transaksi (Struk / Invoice / Nota) <span className="text-rose-500">*</span>
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-sm font-semibold text-slate-700">
+              Bukti Transaksi (Struk / Invoice / Foto) <span className="text-rose-500">*</span>
+            </label>
+            <span className="text-xs font-semibold px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full">
+              Bisa Lebih dari 1 Foto / Berkas
+            </span>
+          </div>
           <p className="text-xs text-slate-500 mb-3">
-            Minimal 1 berkas. Format: JPG, PNG, atau PDF (maks. 10 MB per file). Anda dapat menyertakan keterangan untuk masing-masing foto.
+            Minimal 1 berkas. Anda dapat mengunggah beberapa foto sekaligus atau menambahkannya bertahap (maks. 10 MB per file). Setiap foto dapat diberi keterangan.
           </p>
 
-          <div className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-4 text-center cursor-pointer transition-colors relative">
+          <div className="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-xl p-4 text-center cursor-pointer transition-colors relative bg-slate-50/50 hover:bg-blue-50/20">
             <input
+              ref={fileInputRef}
               type="file"
               multiple
               accept="image/jpeg,image/png,application/pdf"
-              capture="environment"
               onChange={handleFileChange}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
             <div className="flex flex-col items-center justify-center py-3">
-              <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2">
+              <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-2 shadow-sm">
                 <Upload className="w-6 h-6" />
               </div>
               <p className="text-sm font-semibold text-slate-700">
-                Pilih Berkas atau Ambil Foto Struk
+                Pilih Berkas atau Ambil Foto
               </p>
-              <p className="text-xs text-slate-400 mt-1">Dukung kamera HP dan galeri dokumen</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Pilih beberapa file sekaligus dari galeri atau kamera HP
+              </p>
             </div>
           </div>
 
           {/* List Bukti yang Dipilih beserta input Keterangan Foto */}
           {fileItems.length > 0 && (
             <div className="mt-4 space-y-3">
-              <p className="text-xs font-bold text-slate-700">Berkas Terlampir ({fileItems.length}):</p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-slate-700">
+                  Foto / Dokumen Terlampir ({fileItems.length}):
+                </p>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 py-1 px-2.5 rounded-lg hover:bg-blue-50 border border-blue-200 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Tambah Foto Lain</span>
+                </button>
+              </div>
+
               {fileItems.map((item, idx) => (
                 <div
                   key={idx}
@@ -373,7 +402,7 @@ export const NewReimbursementPage: React.FC = () => {
                   <div>
                     <input
                       type="text"
-                      placeholder="Keterangan foto ini (misal: Struk SPBU Pertamina KM 19, Nota Makan Siang, dll.)"
+                      placeholder={`Keterangan foto ke-${idx + 1} (misal: Struk BBM Pertamax, Struk Parkir, Nota Pembelian...)`}
                       value={item.caption}
                       onChange={(e) => updateCaption(idx, e.target.value)}
                       className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-800"

@@ -10,7 +10,6 @@ import {
   FileBarChart,
   Users,
   LogOut,
-  Tag,
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -44,7 +43,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     { to: '/boss/reports', label: 'Laporan', icon: FileBarChart },
     { to: '/boss/reimbursements', label: 'Semua Klaim', icon: Receipt },
     { to: '/boss/employees', label: 'Karyawan', icon: Users },
-    { to: '/boss/categories', label: 'Kategori', icon: Tag },
   ];
 
   const mobileNavItems = isBoss

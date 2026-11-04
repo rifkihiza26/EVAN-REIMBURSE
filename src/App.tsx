@@ -21,7 +21,6 @@ import { BossPaymentsPage } from './features/payments/BossPaymentsPage';
 import { BossReportsPage } from './features/reports/BossReportsPage';
 import { BossAllReimbursementsPage } from './features/reimbursements/BossAllReimbursementsPage';
 import { BossEmployeesPage } from './features/employees/BossEmployeesPage';
-import { BossCategoriesPage } from './features/categories/BossCategoriesPage';
 
 // Root redirector based on authenticated user's role
 const RootRedirector: React.FC = () => {
@@ -166,16 +165,6 @@ export const App: React.FC = () => {
               <ProtectedRoute allowedRole="boss">
                 <AppLayout>
                   <BossEmployeesPage />
-                </AppLayout>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/boss/categories"
-            element={
-              <ProtectedRoute allowedRole="boss">
-                <AppLayout>
-                  <BossCategoriesPage />
                 </AppLayout>
               </ProtectedRoute>
             }

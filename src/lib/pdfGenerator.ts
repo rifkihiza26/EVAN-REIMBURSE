@@ -365,5 +365,21 @@ export async function downloadReimbursementsPdf(
       ? `Reimbursement-${claims[0].claim_number}.pdf`
       : `Rekap-Reimbursement-${claims.length}-Klaim-${new Date().toISOString().split('T')[0]}.pdf`);
 
-  doc.save(safeFilename);
+  // Menggunakan blob output yang andal di mobile (iOS Safari / Android Chrome) maupun desktop
+  try {
+    const pdfBlob = doc.output('blob');
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    const downloadLink = document.createElement('a');
+    downloadLink.href = blobUrl;
+    downloadLink.download = safeFilename;
+    downloadLink.target = '_blank';
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    setTimeout(() => {
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(blobUrl);
+    }, 1500);
+  } catch {
+    doc.save(safeFilename);
+  }
 }

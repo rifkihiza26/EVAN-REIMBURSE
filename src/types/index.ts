@@ -49,6 +49,7 @@ export interface ReimbursementFile {
   reimbursement_id: string;
   storage_path: string;
   original_filename: string;
+  caption?: string | null;
   mime_type: string;
   file_size: number;
   uploaded_by: string;
@@ -89,6 +90,7 @@ export interface Reimbursement {
   expense_date: string;
   amount: number;
   payment_source: PaymentSource;
+  vehicle_info?: string | null;
   description: string;
   approval_status: ApprovalStatus;
   payment_status: PaymentStatus;

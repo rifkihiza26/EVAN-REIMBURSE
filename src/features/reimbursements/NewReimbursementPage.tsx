@@ -2,7 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
-import { Upload, X, AlertTriangle, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Upload, X, AlertTriangle, ArrowLeft, CheckCircle2, Car } from 'lucide-react';
+
+interface SelectedFileItem {
+  file: File;
+  caption: string;
+}
 
 export const NewReimbursementPage: React.FC = () => {
   const { user } = useAuth();
@@ -12,9 +17,10 @@ export const NewReimbursementPage: React.FC = () => {
     new Date().toISOString().split('T')[0]
   );
   const [categoryName, setCategoryName] = useState<string>('');
+  const [vehicleInfo, setVehicleInfo] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [description, setDescription] = useState<string>('');
-  const [files, setFiles] = useState<File[]>([]);
+  const [fileItems, setFileItems] = useState<SelectedFileItem[]>([]);
   
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -39,11 +45,21 @@ export const NewReimbursementPage: React.FC = () => {
     }
 
     setErrorMessage(null);
-    setFiles((prev) => [...prev, ...selectedFiles]);
+    const newItems: SelectedFileItem[] = selectedFiles.map((file) => ({
+      file,
+      caption: '',
+    }));
+    setFileItems((prev) => [...prev, ...newItems]);
   };
 
   const removeFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setFileItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const updateCaption = (index: number, newCaption: string) => {
+    setFileItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, caption: newCaption } : item))
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent, isDraft: boolean = false) => {
@@ -72,7 +88,7 @@ export const NewReimbursementPage: React.FC = () => {
       return;
     }
 
-    if (!isDraft && files.length === 0) {
+    if (!isDraft && fileItems.length === 0) {
       setErrorMessage('Pengajuan klaim wajib menyertakan minimal 1 berkas bukti transaksi.');
       return;
     }
@@ -108,6 +124,7 @@ export const NewReimbursementPage: React.FC = () => {
           expense_date: expenseDate,
           amount: numericAmount,
           payment_source: 'personal',
+          vehicle_info: vehicleInfo.trim() || null,
           description: description.trim(),
           approval_status: isDraft ? 'draft' : 'pending',
           payment_status: 'unpaid',
@@ -120,7 +137,8 @@ export const NewReimbursementPage: React.FC = () => {
       const reimbursementId = reimbData.id;
 
       // 3. Upload files to private bucket
-      for (const file of files) {
+      for (const item of fileItems) {
+        const file = item.file;
         const fileExt = file.name.split('.').pop();
         const safeFileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
         const storagePath = `${user.id}/${reimbursementId}/${safeFileName}`;
@@ -134,13 +152,14 @@ export const NewReimbursementPage: React.FC = () => {
 
         if (uploadError) throw uploadError;
 
-        // Insert metadata to reimbursement_files
+        // Insert metadata to reimbursement_files beserta caption
         const { error: fileRecordError } = await supabase
           .from('reimbursement_files')
           .insert({
             reimbursement_id: reimbursementId,
             storage_path: storagePath,
             original_filename: file.name,
+            caption: item.caption.trim() || null,
             mime_type: file.type,
             file_size: file.size,
             uploaded_by: user.id,
@@ -185,7 +204,7 @@ export const NewReimbursementPage: React.FC = () => {
         <div>
           <h1 className="text-xl font-bold text-slate-900">Ajukan Reimbursement</h1>
           <p className="text-xs text-slate-500">
-            Isi formulir pengeluaran dan lampirkan bukti pembayaran
+            Isi formulir pengeluaran dan lampirkan bukti pembayaran serta keterangan
           </p>
         </div>
       </div>
@@ -225,6 +244,24 @@ export const NewReimbursementPage: React.FC = () => {
             onChange={(e) => setCategoryName(e.target.value)}
             className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-slate-900 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] bg-white text-sm"
           />
+        </div>
+
+        {/* Kendaraan yang Digunakan (Opsional / Fleksibel) */}
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+            <Car className="w-4 h-4 text-slate-500" />
+            <span>Kendaraan yang Digunakan <span className="text-xs text-slate-400 font-normal">(Opsional)</span></span>
+          </label>
+          <input
+            type="text"
+            placeholder="Misal: Mobil Pribadi (B 1234 ABC), Motor Dinas, Grab/Gojek, Mobil Bos, dll."
+            value={vehicleInfo}
+            onChange={(e) => setVehicleInfo(e.target.value)}
+            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-slate-900 focus:ring-blue-500 focus:border-blue-500 min-h-[44px] bg-white text-sm"
+          />
+          <p className="text-[11px] text-slate-500 mt-1">
+            Cantumkan nama pemilik kendaraan atau plat nomor jika pengeluaran berkaitan dengan bahan bakar, tol, atau servis.
+          </p>
         </div>
 
         {/* Nominal Rupiah */}
@@ -267,14 +304,14 @@ export const NewReimbursementPage: React.FC = () => {
         {/* Keterangan */}
         <div>
           <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-            Keterangan / Keperluan <span className="text-rose-500">*</span>
+            Keterangan / Keperluan Klaim <span className="text-rose-500">*</span>
           </label>
           <textarea
             required
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Jelaskan tujuan dan rincian transaksi pengeluaran..."
+            placeholder="Jelaskan secara lengkap dan jelas rincian keperluan transaksi pengeluaran ini..."
             className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-slate-900 focus:ring-emerald-500 focus:border-emerald-500 text-sm"
           />
         </div>
@@ -285,7 +322,7 @@ export const NewReimbursementPage: React.FC = () => {
             Bukti Transaksi (Struk / Invoice / Nota) <span className="text-rose-500">*</span>
           </label>
           <p className="text-xs text-slate-500 mb-3">
-            Minimal 1 berkas. Format: JPG, PNG, atau PDF (maks. 10 MB per file).
+            Minimal 1 berkas. Format: JPG, PNG, atau PDF (maks. 10 MB per file). Anda dapat menyertakan keterangan untuk masing-masing foto.
           </p>
 
           <div className="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-4 text-center cursor-pointer transition-colors relative">
@@ -308,28 +345,40 @@ export const NewReimbursementPage: React.FC = () => {
             </div>
           </div>
 
-          {/* List Bukti yang Dipilih */}
-          {files.length > 0 && (
-            <div className="mt-4 space-y-2">
-              {files.map((file, idx) => (
+          {/* List Bukti yang Dipilih beserta input Keterangan Foto */}
+          {fileItems.length > 0 && (
+            <div className="mt-4 space-y-3">
+              <p className="text-xs font-bold text-slate-700">Berkas Terlampir ({fileItems.length}):</p>
+              {fileItems.map((item, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                  className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm space-y-2"
                 >
-                  <div className="flex items-center gap-2 truncate">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                    <span className="font-medium text-slate-800 truncate">{file.name}</span>
-                    <span className="text-xs text-slate-400 flex-shrink-0">
-                      ({(file.size / 1024).toFixed(0)} KB)
-                    </span>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 truncate">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                      <span className="font-semibold text-slate-800 truncate">{item.file.name}</span>
+                      <span className="text-xs text-slate-400 flex-shrink-0">
+                        ({(item.file.size / 1024).toFixed(0)} KB)
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(idx)}
+                      className="p-1 text-slate-400 hover:text-rose-600 min-w-[32px] min-h-[32px] flex items-center justify-center rounded"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeFile(idx)}
-                    className="p-1 text-slate-400 hover:text-rose-600 min-w-[32px] min-h-[32px] flex items-center justify-center rounded"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="Keterangan foto ini (misal: Struk SPBU Pertamina KM 19, Nota Makan Siang, dll.)"
+                      value={item.caption}
+                      onChange={(e) => updateCaption(idx, e.target.value)}
+                      className="w-full px-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-800"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -350,7 +399,7 @@ export const NewReimbursementPage: React.FC = () => {
             type="button"
             disabled={isLoading}
             onClick={(e) => handleSubmit(e, false)}
-            className="w-full sm:flex-1 px-5 py-3 bg-emerald-600 text-white font-semibold rounded-lg hover:bg-emerald-700 min-h-[44px] shadow-sm transition-colors disabled:opacity-50 text-sm flex items-center justify-center gap-2"
+            className="w-full sm:flex-1 px-5 py-3 bg-blue-700 text-white font-semibold rounded-lg hover:bg-blue-800 min-h-[44px] shadow-sm transition-colors disabled:opacity-50 text-sm flex items-center justify-center gap-2"
           >
             {isLoading ? (
               <>

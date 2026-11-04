@@ -6,6 +6,7 @@ import { Reimbursement, ReimbursementFile, ApprovalHistoryItem } from '../../typ
 import { formatRupiah, formatDate, formatDateTime } from '../../lib/formatters';
 import { StatusBadge } from '../../components/ui/StatusBadge';
 import { ProofViewerCard } from '../../components/reimbursement/ProofViewerCard';
+import { downloadReimbursementsPdf } from '../../lib/pdfGenerator';
 import {
   ArrowLeft,
   AlertCircle,
@@ -15,6 +16,8 @@ import {
   Ban,
   Clock,
   User,
+  Car,
+  FileDown,
 } from 'lucide-react';
 
 export const ReimbursementDetailPage: React.FC = () => {
@@ -213,7 +216,7 @@ export const ReimbursementDetailPage: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
       {/* Top back bar */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-slate-600 hover:text-slate-900 text-sm font-semibold p-2 -ml-2 rounded-lg"
@@ -221,7 +224,18 @@ export const ReimbursementDetailPage: React.FC = () => {
           <ArrowLeft className="w-4 h-4" />
           <span>Kembali</span>
         </button>
-        <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => downloadReimbursementsPdf([{ ...claim, files }])}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors min-h-[38px]"
+            title="Download formulir & bukti dalam format PDF resmi"
+          >
+            <FileDown className="w-4 h-4" />
+            <span>Download PDF</span>
+          </button>
+
           <StatusBadge type="approval" status={claim.approval_status} />
           {claim.approval_status === 'approved' && (
             <StatusBadge type="payment" status={claim.payment_status} />
@@ -292,6 +306,14 @@ export const ReimbursementDetailPage: React.FC = () => {
             <span className="inline-block px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md font-medium text-xs">
               {claim.category?.name || 'Umum'}
             </span>
+          </div>
+
+          <div>
+            <span className="text-xs text-slate-400 block mb-0.5">Kendaraan yang Digunakan</span>
+            <div className="flex items-center gap-2 font-medium text-slate-800">
+              <Car className="w-4 h-4 text-slate-400" />
+              <span>{claim.vehicle_info || 'Tidak menggunakan kendaraan / -'}</span>
+            </div>
           </div>
 
           <div>

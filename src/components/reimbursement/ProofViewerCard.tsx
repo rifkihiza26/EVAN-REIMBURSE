@@ -102,25 +102,34 @@ export const ProofViewerCard: React.FC<ProofViewerCardProps> = ({
       </div>
 
       {/* File Info Bar / Thumbnail List */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 text-xs text-slate-600">
-        <div className="truncate">
-          <span className="font-semibold text-slate-800">{currentFile.original_filename}</span>
-          <span className="text-slate-400 ml-2">
-            ({formatFileSize(currentFile.file_size)} • {currentFile.mime_type.split('/')[1]?.toUpperCase()})
-          </span>
+      <div className="space-y-1 pt-1 text-xs text-slate-600">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="truncate">
+            <span className="font-semibold text-slate-800">{currentFile.original_filename}</span>
+            <span className="text-slate-400 ml-2">
+              ({formatFileSize(currentFile.file_size)} • {currentFile.mime_type.split('/')[1]?.toUpperCase()})
+            </span>
+          </div>
+
+          {currentFile.signed_url && (
+            <a
+              href={currentFile.signed_url}
+              download={currentFile.original_filename}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 text-blue-700 hover:text-blue-900 font-semibold"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Unduh Berkas Asli</span>
+            </a>
+          )}
         </div>
 
-        {currentFile.signed_url && (
-          <a
-            href={currentFile.signed_url}
-            download={currentFile.original_filename}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-blue-700 hover:text-blue-900 font-semibold"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Unduh Berkas Asli</span>
-          </a>
+        {currentFile.caption && (
+          <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700">
+            <span className="font-semibold text-slate-800">Keterangan: </span>
+            <span>{currentFile.caption}</span>
+          </div>
         )}
       </div>
 

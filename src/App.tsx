@@ -12,6 +12,7 @@ import { EmployeeDashboard } from './features/dashboard/EmployeeDashboard';
 import { NewReimbursementPage } from './features/reimbursements/NewReimbursementPage';
 import { EmployeeReimbursementsPage } from './features/reimbursements/EmployeeReimbursementsPage';
 import { ReimbursementDetailPage } from './features/reimbursements/ReimbursementDetailPage';
+import { EmployeeAttendancePage } from './features/attendance/EmployeeAttendancePage';
 
 // Boss Pages
 import { BossDashboard } from './features/dashboard/BossDashboard';
@@ -21,6 +22,7 @@ import { BossPaymentsPage } from './features/payments/BossPaymentsPage';
 import { BossReportsPage } from './features/reports/BossReportsPage';
 import { BossAllReimbursementsPage } from './features/reimbursements/BossAllReimbursementsPage';
 import { BossEmployeesPage } from './features/employees/BossEmployeesPage';
+import { BossAttendanceMonitoringPage } from './features/attendance/BossAttendanceMonitoringPage';
 
 // Root redirector based on authenticated user's role
 const RootRedirector: React.FC = () => {
@@ -68,6 +70,16 @@ export const App: React.FC = () => {
             }
           />
           <Route
+            path="/employee/attendance"
+            element={
+              <ProtectedRoute allowedRole="employee">
+                <AppLayout>
+                  <EmployeeAttendancePage />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/employee/reimbursements"
             element={
               <ProtectedRoute allowedRole="employee">
@@ -105,6 +117,16 @@ export const App: React.FC = () => {
               <ProtectedRoute allowedRole="boss">
                 <AppLayout>
                   <BossDashboard />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/boss/attendance"
+            element={
+              <ProtectedRoute allowedRole="boss">
+                <AppLayout>
+                  <BossAttendanceMonitoringPage />
                 </AppLayout>
               </ProtectedRoute>
             }

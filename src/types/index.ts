@@ -108,3 +108,22 @@ export interface Reimbursement {
   history?: ApprovalHistoryItem[];
   payment?: Payment;
 }
+
+export type AttendanceType = 'in' | 'visit' | 'out';
+
+export interface Attendance {
+  id: string;
+  employee_id: string;
+  attendance_type: AttendanceType;
+  title_or_location?: string | null;
+  notes?: string | null;
+  timestamp: string;
+  latitude: number;
+  longitude: number;
+  accuracy_meters?: number | null;
+  address_display?: string | null;
+  photo_storage_path: string;
+  created_at: string;
+  signed_photo_url?: string;
+  employee?: Profile;
+}

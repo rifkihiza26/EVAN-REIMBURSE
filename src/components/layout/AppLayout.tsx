@@ -10,6 +10,7 @@ import {
   FileBarChart,
   Users,
   LogOut,
+  Camera,
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -32,12 +33,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   // Nav items definition
   const employeeNavItems = [
     { to: '/employee/dashboard', label: 'Beranda', icon: LayoutDashboard },
-    { to: '/employee/reimbursements', label: 'Riwayat', icon: Receipt },
-    { to: '/employee/reimbursements/new', label: 'Ajukan', icon: PlusCircle, highlight: true },
+    { to: '/employee/attendance', label: 'Presensi', icon: Camera, highlight: true },
+    { to: '/employee/reimbursements', label: 'Riwayat Klaim', icon: Receipt },
+    { to: '/employee/reimbursements/new', label: 'Ajukan Klaim', icon: PlusCircle },
   ];
 
   const bossNavItems = [
     { to: '/boss/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/boss/attendance', label: 'Presensi & Lapangan', icon: Camera },
     { to: '/boss/approvals', label: 'Persetujuan', icon: FileCheck2 },
     { to: '/boss/payments', label: 'Pembayaran', icon: Wallet },
     { to: '/boss/reports', label: 'Laporan', icon: FileBarChart },
@@ -48,10 +51,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const mobileNavItems = isBoss
     ? [
         { to: '/boss/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { to: '/boss/attendance', label: 'Presensi', icon: Camera },
         { to: '/boss/approvals', label: 'Persetujuan', icon: FileCheck2 },
         { to: '/boss/payments', label: 'Bayar', icon: Wallet },
         { to: '/boss/reports', label: 'Laporan', icon: FileBarChart },
-        { to: '/boss/reimbursements', label: 'Semua', icon: Receipt },
       ]
     : employeeNavItems;
 

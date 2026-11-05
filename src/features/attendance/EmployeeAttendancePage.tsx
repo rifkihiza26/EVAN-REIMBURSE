@@ -56,7 +56,7 @@ export const EmployeeAttendancePage: React.FC = () => {
   // Cek apakah konteks aman (HTTPS atau localhost)
   const isSecureContext = window.isSecureContext || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-  // 1. Ambil Lokasi GPS
+  // 1. Ambil Lokasi GPS (Dioptimalkan untuk HP: fallback high accuracy -> standard accuracy)
   const fetchLocation = (): Promise<boolean> => {
     return new Promise((resolve) => {
       setIsGettingLocation(true);
@@ -69,33 +69,60 @@ export const EmployeeAttendancePage: React.FC = () => {
         return;
       }
 
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const { latitude, longitude, accuracy } = pos.coords;
-          setCoords({ lat: latitude, lng: longitude, accuracy });
-          setIsGettingLocation(false);
-          resolve(true);
+      // Handler saat koordinat sukses didapat
+      const handleSuccess = async (pos: GeolocationPosition) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        setCoords({ lat: latitude, lng: longitude, accuracy });
+        setIsGettingLocation(false);
+        setGpsError(null);
+        resolve(true);
 
-          // Ambil nama wilayah via reverse geocode
+        // Ambil nama wilayah via reverse geocode
+        try {
           const addr = await getReverseGeocoding(latitude, longitude);
           setLocationName(addr);
-        },
-        (err) => {
-          console.warn('Geolocation error:', err);
-          let msg = 'Gagal mengakses GPS. Harap izinkan akses lokasi di browser HP Anda.';
-          if (err.code === 1) {
-            msg = 'Akses lokasi ditolak. Buka pengaturan browser dan izinkan GPS.';
+        } catch {
+          setLocationName(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+        }
+      };
+
+      // Coba pertama: High Accuracy (GPS hardware HP)
+      navigator.geolocation.getCurrentPosition(
+        handleSuccess,
+        (highAccErr) => {
+          console.warn('High accuracy GPS gagal di HP, mencoba fallback standard GPS/Network:', highAccErr);
+          
+          // Jika ditolak izin secara eksplisit (code 1), jangan fallback
+          if (highAccErr.code === 1) {
+            setGpsError('Akses lokasi ditolak. Buka pengaturan browser di HP Anda dan izinkan akses Lokasi.');
             setPermissionStep('denied');
-          } else if (err.code === 2) {
-            msg = 'Posisi lokasi tidak ditemukan. Pastikan GPS HP aktif.';
-          } else if (err.code === 3) {
-            msg = 'Waktu pencarian lokasi habis (timeout).';
+            setIsGettingLocation(false);
+            resolve(false);
+            return;
           }
-          setGpsError(msg);
-          setIsGettingLocation(false);
-          resolve(false);
+
+          // Fallback kedua: standard accuracy dengan timeout lebih longgar dan cache 60 detik
+          navigator.geolocation.getCurrentPosition(
+            handleSuccess,
+            (fallbackErr) => {
+              console.warn('Fallback geolocation error:', fallbackErr);
+              let msg = 'Gagal mengakses GPS. Pastikan Lokasi / GPS di HP Anda sudah dinyalakan.';
+              if (fallbackErr.code === 1) {
+                msg = 'Akses lokasi ditolak. Harap izinkan akses lokasi di pengaturan browser HP.';
+                setPermissionStep('denied');
+              } else if (fallbackErr.code === 2) {
+                msg = 'Sinyal GPS tidak ditemukan. Pastikan layanan Lokasi (GPS) aktif di setelan HP.';
+              } else if (fallbackErr.code === 3) {
+                msg = 'Pencarian GPS timeout. Silakan klik tombol "Perbarui GPS" sekali lagi.';
+              }
+              setGpsError(msg);
+              setIsGettingLocation(false);
+              resolve(false);
+            },
+            { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 }
+          );
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
       );
     });
   };

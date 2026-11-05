@@ -230,33 +230,11 @@ export const EmployeeAttendancePage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (navigator.permissions && navigator.permissions.query) {
-      Promise.all([
-        navigator.permissions.query({ name: 'camera' as PermissionName }).catch(() => null),
-        navigator.permissions.query({ name: 'geolocation' as PermissionName }).catch(() => null),
-      ]).then(([camStatus, geoStatus]) => {
-        if (
-          camStatus?.state === 'prompt' ||
-          geoStatus?.state === 'prompt' ||
-          camStatus?.state === 'denied' ||
-          geoStatus?.state === 'denied'
-        ) {
-          setShowPermissionModal(true);
-          if (camStatus?.state === 'denied' || geoStatus?.state === 'denied') {
-            setPermissionStep('denied');
-          }
-        } else {
-          startCamera('user');
-          fetchLocation();
-        }
-      });
-    } else {
-      startCamera('user').then((ok) => {
-        if (!ok) setShowPermissionModal(true);
-      });
-      fetchLocation();
-    }
-
+    // Pada Safari iOS, navigator.permissions.query sering kali tidak mengizinkan query 'geolocation'
+    // atau mengembalikan status tidak akurat sehingga memicu status "denied" palsu.
+    // Solusi standar industri untuk iOS & Android: langsung panggil API aslinya secara natural.
+    fetchLocation();
+    startCamera('user');
     loadTodayHistory();
 
     return () => {

@@ -311,6 +311,18 @@ export const EmployeeAttendancePage: React.FC = () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setCapturedBlob(null);
+
+    // Pastikan video element langsung play kembali tanpa perlu flip kamera
+    setTimeout(() => {
+      if (videoRef.current) {
+        if (streamRef.current && streamRef.current.active) {
+          videoRef.current.srcObject = streamRef.current;
+          videoRef.current.play().catch(console.error);
+        } else {
+          startCamera(facingMode);
+        }
+      }
+    }, 50);
   };
 
   const handleSubmitAttendance = async () => {
@@ -675,32 +687,36 @@ export const EmployeeAttendancePage: React.FC = () => {
                   </button>
                 </div>
               </div>
-            ) : previewUrl ? (
-              <div className="relative w-full h-full">
-                <img
-                  src={previewUrl}
-                  alt="Preview Presensi"
-                  className="w-full h-full object-contain bg-black"
-                />
-              </div>
             ) : (
-              <>
+              <div className="relative w-full h-full">
+                {/* Video element tetap dipertahankan di DOM agar stream tidak terputus dan tidak freeze saat foto ulang */}
                 <video
                   ref={videoRef}
                   playsInline
                   muted
                   autoPlay
-                  className={`w-full h-full object-cover ${facingMode === 'user' ? 'scale-x-[-1]' : ''}`}
+                  className={`w-full h-full object-cover ${previewUrl ? 'hidden' : 'block'} ${
+                    facingMode === 'user' ? 'scale-x-[-1]' : ''
+                  }`}
                 />
-                <div className="absolute inset-8 border-2 border-white/40 border-dashed rounded-2xl pointer-events-none flex flex-col justify-between p-3">
-                  <div className="flex justify-between text-[11px] font-bold text-white/80 bg-slate-900/60 px-2.5 py-1 rounded-full self-start backdrop-blur-sm">
-                    {companyName}
+
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt="Preview Presensi"
+                    className="w-full h-full object-contain bg-black"
+                  />
+                ) : (
+                  <div className="absolute inset-8 border-2 border-white/40 border-dashed rounded-2xl pointer-events-none flex flex-col justify-between p-3">
+                    <div className="flex justify-between text-[11px] font-bold text-white/80 bg-slate-900/60 px-2.5 py-1 rounded-full self-start backdrop-blur-sm">
+                      {companyName}
+                    </div>
+                    <div className="text-center text-xs text-white/90 bg-slate-900/60 py-1 px-3 rounded-full self-center backdrop-blur-sm">
+                      Arahkan wajah atau area lokasi ke dalam bingkai
+                    </div>
                   </div>
-                  <div className="text-center text-xs text-white/90 bg-slate-900/60 py-1 px-3 rounded-full self-center backdrop-blur-sm">
-                    Arahkan wajah atau area lokasi ke dalam bingkai
-                  </div>
-                </div>
-              </>
+                )}
+              </div>
             )}
           </div>
         </div>

@@ -86,43 +86,64 @@ export const EmployeeAttendancePage: React.FC = () => {
         }
       };
 
-      // Coba pertama: High Accuracy (GPS hardware HP)
+      // Opsi 1: Panggil getCurrentPosition dengan setting ramah iOS
+      // Catatan teknis iOS WebKit: timeout tidak boleh terlalu kecil, dan maximumAge tidak boleh 0 jika di dalam ruangan
       navigator.geolocation.getCurrentPosition(
         handleSuccess,
-        (highAccErr) => {
-          console.warn('High accuracy GPS gagal di HP, mencoba fallback standard GPS/Network:', highAccErr);
-          
-          // Jika ditolak izin secara eksplisit (code 1), jangan fallback
-          if (highAccErr.code === 1) {
-            setGpsError('Akses lokasi ditolak. Buka pengaturan browser di HP Anda dan izinkan akses Lokasi.');
+        (err) => {
+          console.warn('Geolocation attempt 1 error on iOS:', err);
+
+          // Jika ditolak izin secara eksplisit (code 1 = PERMISSION_DENIED)
+          if (err.code === 1) {
+            setGpsError(
+              'Akses Lokasi di Safari belum aktif. Pastikan di Pengaturan iPhone > Privasi & Keamanan > Layanan Lokasi > Situs Web Safari disetel ke "Saat Menggunakan App".'
+            );
             setPermissionStep('denied');
             setIsGettingLocation(false);
             resolve(false);
             return;
           }
 
-          // Fallback kedua: standard accuracy dengan timeout lebih longgar dan cache 60 detik
-          navigator.geolocation.getCurrentPosition(
-            handleSuccess,
-            (fallbackErr) => {
-              console.warn('Fallback geolocation error:', fallbackErr);
-              let msg = 'Gagal mengakses GPS. Pastikan Lokasi / GPS di HP Anda sudah dinyalakan.';
-              if (fallbackErr.code === 1) {
-                msg = 'Akses lokasi ditolak. Harap izinkan akses lokasi di pengaturan browser HP.';
-                setPermissionStep('denied');
-              } else if (fallbackErr.code === 2) {
-                msg = 'Sinyal GPS tidak ditemukan. Pastikan layanan Lokasi (GPS) aktif di setelan HP.';
-              } else if (fallbackErr.code === 3) {
-                msg = 'Pencarian GPS timeout. Silakan klik tombol "Perbarui GPS" sekali lagi.';
-              }
-              setGpsError(msg);
+          // Coba kedua: gunakan watchPosition sesaat lalu clearWatch (trik paling ampuh di iOS WebKit untuk memicu GPS bangun)
+          let watchId: number | null = null;
+          const fallbackTimeout = setTimeout(() => {
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            setIsGettingLocation(false);
+            setGpsError('Sinyal GPS belum terkunci. Silakan klik tombol "Perbarui GPS" atau geser ke area terbuka.');
+            resolve(false);
+          }, 15000);
+
+          watchId = navigator.geolocation.watchPosition(
+            (pos) => {
+              clearTimeout(fallbackTimeout);
+              if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+              handleSuccess(pos);
+            },
+            (wErr) => {
+              console.warn('watchPosition fallback error:', wErr);
+              clearTimeout(fallbackTimeout);
+              if (watchId !== null) navigator.geolocation.clearWatch(watchId);
               setIsGettingLocation(false);
+              if (wErr.code === 1) {
+                setGpsError('Izin lokasi ditolak pada Safari iOS.');
+                setPermissionStep('denied');
+              } else {
+                setGpsError('Gagal mendapatkan posisi GPS. Coba klik "Perbarui GPS".');
+              }
               resolve(false);
             },
-            { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 }
+            {
+              enableHighAccuracy: false,
+              timeout: 12000,
+              maximumAge: 120000, // Izinkan cache 2 menit terakhir agar langsung dapat posisi
+            }
           );
         },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+        {
+          enableHighAccuracy: true,
+          timeout: 12000,
+          maximumAge: 60000,
+        }
       );
     });
   };
